@@ -40,6 +40,18 @@ const CONFIG = {
   },
   EXTERNAL: {
     API_KEY: process.env.API_KEY,
+    UPLOADS_DIR: process.env.UPLOADS_DIR || 'uploads',
+  },
+  REDIS: {
+    PORT: parseInt(process.env.REDIS_PORT as string) || 6379,
+    HOST: process.env.REDIS_HOST || '127.0.0.1',
+    PROJECTS_KEY: process.env.REDIS_PROJECTS_DEFAULT_KEY || 'projects',
+    SET_TYPE_KEY: process.env.REDIS_SET_TYPE_DEFAULT_KEY || 'type',
+    SET_TIMESTAMP_KEY:
+      process.env.REDIS_SET_TIMESTAMP_DEFAULT_KEY || 'timestamp',
+    SET_DESCRIPTION_KEY:
+      process.env.REDIS_SET_DESCRIPTION_DEFAULT_KEY || 'description',
+    SET_ASSEMBLY_KEY: process.env.REDIS_SET_ASSEMBLY_DEFAULT_KEY || 'assembly',
   },
 };
 
