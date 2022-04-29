@@ -151,7 +151,7 @@ export const post = async (req: MulterRequest, res: Response) => {
               }
             }
 
-            redis.log(`Records added: ${recordsAdded}`);
+            // redis.log(`Records added: ${recordsAdded}`);
 
             if (lastLine) {
               res.status(200).send({
@@ -176,7 +176,7 @@ export const post = async (req: MulterRequest, res: Response) => {
      * Clean up temporary upload file
      */
     await fs.promises.rm(req.file.path, { force: true });
-    
+
   } catch (err) {
     res.status(500).send({
       message: err.message,
@@ -192,18 +192,18 @@ export const post = async (req: MulterRequest, res: Response) => {
  */
 
 export const get = async (req: Request, res: Response) => {
-  const set = `set:${req.query.set as string}`;
+  const set = (typeof(req.query.set as string) !== 'undefined') ? `set:${req.query.set as string}` : '';
   try {
     const redis = new Redis();
-    if (set) {
+    if (set.length > 4) {
       redis.log(`Looking up set [${set}]`);
       await redis
-        .hKeys(set)
-        .then((properties) => {
-          if (properties.length > 0) {
+        .hGetAll(set)
+        .then((data) => {
+          if (data) {
             res.status(200).send({
               description: `Properties associated with set [${set}]`,
-              properties: properties,
+              data: data,
             });
           } else {
             res.status(404).send({

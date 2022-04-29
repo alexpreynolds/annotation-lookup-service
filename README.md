@@ -1,29 +1,13 @@
-<p align="center">
-    <img width="250px" src="https://user-images.githubusercontent.com/50701501/104827248-f88a1800-585b-11eb-985e-5e31dbb0b913.jpg"><br/>
-</p>
-<p align="center">
-  <a href="https://lerna.js.org/"><img src="https://img.shields.io/badge/PRs-Welcome-brightgreen.svg" alt="Maintained with Lerna"></a>
-  <a href="/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
-</p>
-
 # Overview
 
-**TEN stack** is a `Typescript` + `Express` + `Node` starter kit to develop `REST API` server apps.
-Nothing new under the sun, just a straight forward combo to make server development a little bit faster. And of course, this make my freelancing days more enjoyable 😎
-Comes with:
+**annotation-lookup-service** is a `Typescript`, `Express`, `Node`, and `Redis`-backed application that provides a partial REST API to do a direct lookup of annotations. 
 
-- Everything typed with [Typescript](https://www.typescriptlang.org/)
-- [ES6](http://babeljs.io/learn-es2015/) features/modules
-- ES7 [async](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function) / [await](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/await)
-- Run with [Nodemon](https://nodemon.io/) for automatic reload & watch
-- [ESLint](http://eslint.org/) for code linting
-- Code formatting using [Prettier](https://www.npmjs.com/package/prettier)
-- Configuration management using [dotenv](https://www.npmjs.com/package/dotenv)
-- Improved commits with [Husky](https://typicode.github.io/husky)
-- Manage production app proccess with [PM2](https://pm2.keymetrics.io/)
+This is a one-to-one, straight mapping of an annotation to its related metadata, such as genomic location. This does not provide the ability to query on annotation prefixes.
 
-  <br>
-  <br>
+The Redis service must be configured with sufficient memory (`maxmemory`) to hold the annotation sets in memory. If sets are added beyond this capability, older annotations will be lost from memory.
+
+<br>
+<br>
 
 ---
 
@@ -32,56 +16,12 @@ Comes with:
 - [Node.js](https://nodejs.org) (`>= 12.0.0`)
 - [Yarn](https://yarnpkg.com/en/docs/install) or [NPM](https://docs.npmjs.com/getting-started/installing-node)
 
+<br>
+<br>
+
 ## Install
 
-- Fork or Use [this](https://github.com/filoscoder/tenstack-starter/generate) template repository.
-- [Clone](https://github.com/git-guides/git-clone) the forked repository.
 - Install the dependencies with [yarn](https://yarnpkg.com/getting-started/usage) or [npm](https://docs.npmjs.com/cli/v7/commands/npm-install).
-
-> Make sure you already have [`node.js`](https://github.com/filoscoder/tenstack-starter#prerequisites) and [`npm`](https://github.com/filoscoder/tenstack-starter#prerequisites) or [`yarn`](https://github.com/filoscoder/tenstack-starter#prerequisites) installed in your system.
-
-- Set your `git remote add origin` path
-
-```bash
- git remote add origin ${forked-and-cloned-path}
-```
-
-> [Update the url](https://docs.github.com/en/get-started/getting-started-with-git/managing-remote-repositories#changing-a-remote-repositorys-url) if you already have an `origin`
-
-<br>
-<br>
-
-## Config
-
-- Copy `.env.example` a file at the root of the application.
-- Add or modify specific variables and update it according to your need.
-
-```bash
- cp .env.example .env
-```
-
-> Check the `config` folder to customize your settings (`/src/config`)
-
-<br>
-<br>
-
-## Alias @
-
-To make paths clean and ease to access `@` is setup up for `/src` path
-
-```javascript
-// BEFORE
-import config from './config';
-import routes from './routes';
-
-// NOW
-import config from '@/config';
-import routes from '@/routes';
-```
-
-> You can customize this setup:
-> `/tsconfig.json` > compilerOptions.paths
-> `/eslintrc.yml` > rules.settings.alias.map
 
 <br>
 <br>
@@ -94,7 +34,7 @@ Run the server locally. It will be run with Nodemon and ready to serve on port `
  yarn start # or npm start
 ```
 
-> Check [`package.json`](https://github.com/filoscoder/tenstack-starter/blob/master/package.json) to see more "scripts"
+Services are available via http://localhost:8080.
 
 <br>
 <br>
@@ -116,21 +56,96 @@ Then, use [`pm2`](https://github.com/Unitech/pm2) to start the application as a 
 <br>
 <br>
 
-# Contribution
+## Services
 
-This repository will be managed as an `open-source`. <br>
-Please feel free to open an `issue` or a `pull request` to suggest changes or additions.
+Annotations are structured in the following way: `Project` > `Set` > `Annotation`.
 
-# Support & Contact
+There is one collection of projects at the top-most level. 
 
-If you have any question or suggestion, don't hesitate to contact me:
+This default `Project` contains one or more `Set` collections containing genomic annotations. An example of a `Set` would be the current set of Index DHS annotations. Another example might be dbSNP variants. (Note: Multiple sets may be hosted from the same service instance, but the Redis database must be configured with sufficient memory to hold all keys.)
 
-✉️ [filoscoder.io@gmail.com](mailto:filoscoder.io@gmail.com)
+Each `Set` entry has metadata associated with it, such as `type`, `assembly`, `sourceUrl`, and `description`. These can be retrieved for descriptive purposes.
 
-🎧 I was listening [this](https://www.youtube.com/watch?v=_H8ku3APY40) playlist to boost my productivity!
+Each `Set` can be of type `BED4`, `BED4+`, `BED6`, or `DHS`, depending on the input type. The type specifies how many columns are stored from the input file.
 
-# Author & Credits
+Within a `Set` is a collection of one or more `Annotation` entries.
 
-<a src="https://github.com/filoscoder">
-<img width="60px" style="border-radius: 50%;" src="https://avatars.githubusercontent.com/filoscoder">
-</a>
+Each `Annotation` must have four or more columns of data. The input file specifying annotations must be minimally BED4. The input file does not need any particular sort order. 
+
+### API
+
+#### Sets
+
+To list all sets, use `/sets`, e.g.:
+
+```
+// http://localhost:8080/sets
+
+{
+  "description": "Available sets for projects",
+  "sets": [
+    "set:Index_DHS"
+  ]
+}
+```
+
+Note that the set name is stored as `set:<foo>`, but the set identifier is just `foo`.
+
+To get properties of a set, use `/sets?set=<foo>`, e.g.:
+
+```
+// http://localhost:8080/sets?set=Index_DHS
+
+{
+  "description": "Properties associated with set [set:Index_DHS]",
+  "data": {
+    "type": "BED4",
+    "timestamp": "2022-04-28T20:25:18.929Z",
+    "description": "DHS_Index_and_Vocabulary_hg38_WM20190703",
+    "assembly": "hg38"
+  }
+}
+```
+
+To add a set, use a `POST` request to `/sets`, e.g. first download the Index DHS file:
+
+```
+$ wget -qO- http://www.meuleman.org/DHS_Index_and_Vocabulary_hg38_WM20190703.txt.gz \
+    | gunzip -c \
+    | tail -n+2 \
+    | sort-bed - \
+    > /Users/areynolds/Downloads/DHS_Index_and_Vocabulary_hg38_WM20190703.bed
+```
+
+Then `POST` it, with useful metadata:
+
+```
+$ curl -F "name=Index_DHS" \
+       -F "type=BED4" \
+       -F "sourceUrl=http://www.meuleman.org/DHS_Index_and_Vocabulary_hg38_WM20190703.txt.gz" \
+       -F "description=DHS_Index_and_Vocabulary_hg38_WM20190703" \
+       -F "assembly=hg38" \
+       -F "file=@/Users/areynolds/Downloads/DHS_Index_and_Vocabulary_hg38_WM20190703.bed" \
+       -X POST http://localhost:8080/sets
+```
+
+This can take a few minutes. Upon completion, the response will be a JSON object containing metadata about the set, along with the number of records added.
+
+#### Annotation
+
+Once a set is added, it can be queried for an annotation that matches the identifier from the input file's fourth column, via `/annotation?identifier=<identifier>&set=<set>` and (optionally) `/annotation?identifier=<identifier>&set=<set>&feature=<feature>`, e.g.:
+
+```
+// http://localhost:8080/annotation?identifier=X.217776&set=Index_DHS
+
+{
+  "description": "All data associated with identifier [Index_DHS:X.217776]",
+  "data": {
+    "seqname": "chrX",
+    "start": 20412934,
+    "end": 20413140
+  }
+}
+```
+
+By default, all data associated with the annotation are returned. If the feature type `interval` is specified, only the genomic interval is returned. (Note: For BED4 datasets, the response will be identical whether the feature is or is not specified.)
