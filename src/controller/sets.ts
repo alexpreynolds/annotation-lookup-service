@@ -176,7 +176,6 @@ export const post = async (req: MulterRequest, res: Response) => {
      * Clean up temporary upload file
      */
     await fs.promises.rm(req.file.path, { force: true });
-
   } catch (err) {
     res.status(500).send({
       message: err.message,
@@ -192,7 +191,10 @@ export const post = async (req: MulterRequest, res: Response) => {
  */
 
 export const get = async (req: Request, res: Response) => {
-  const set = (typeof(req.query.set as string) !== 'undefined') ? `set:${req.query.set as string}` : '';
+  const set =
+    typeof (req.query.set as string) !== 'undefined'
+      ? `set:${req.query.set as string}`
+      : '';
   try {
     const redis = new Redis();
     if (set.length > 4) {

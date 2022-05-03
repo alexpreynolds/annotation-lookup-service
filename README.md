@@ -149,3 +149,12 @@ Once a set is added, it can be queried for an annotation that matches the identi
 ```
 
 By default, all data associated with the annotation are returned. If the feature type `interval` is specified, only the genomic interval is returned. (Note: For BED4 datasets, the response will be identical whether the feature is or is not specified.)
+
+<br>
+<br>
+
+## Memory usage
+
+For estimation purpose with other datasets. Our basic sample set of 3591898 Index DHS elements are stored as a mapping of `identifier` strings to genomic intervals. Redis uses 551903552 bytes (~526 MB) to store this map. On average, therefore, each key-value pair requires ~153.7 bytes.
+
+Note: This storage requirement will necessarily increase, if additional metadata are stored for each kv pair beyond genomic location.
